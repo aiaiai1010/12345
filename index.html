@@ -19,9 +19,8 @@
       margin: 10px;
     }
     video, canvas {
-      transform: scaleX(-1); /* 内カメラ用の鏡像 */
       display: block;
-      margin: 8px 0;
+      transform: scaleX(-1);
       max-width: 100vw;
       height: auto;
     }
@@ -73,9 +72,13 @@
 
       // 映像サイズに合わせて canvas を自動調整
       video.addEventListener('loadedmetadata', () => {
+        video.width = video.videoWidth;
+        video.height = video.videoHeight;
+        video.style.width = `${video.videoWidth}px`;
+        video.style.height = `${video.videoHeight}px`;
+
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-
         canvas.style.width = `${video.videoWidth}px`;
         canvas.style.height = `${video.videoHeight}px`;
       });
