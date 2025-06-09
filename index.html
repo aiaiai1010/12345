@@ -20,7 +20,7 @@
     }
     video, canvas {
       width: 360px;
-      height: 270px;
+      height: 640px;
       transform: scaleX(-1); /* 内カメラ用の鏡像 */
     }
   </style>
@@ -124,7 +124,7 @@
           await faceMesh.send({ image: video });
         },
         width: 360,
-        height: 270
+        height: 640
       });
       camera.start();
     }
