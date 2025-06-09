@@ -42,6 +42,9 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
 
+    canvas.width = 360;
+    canvas.height = 270;
+    
     // 傾きセンサ処理
     function handleOrientation(event) {
       const pitch = event.beta;
