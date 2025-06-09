@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>傾き + 顔検出</title>
+  <style>
+    body {
+      font-size: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+    #startBtn {
+      font-size: 28px;
+      padding: 16px 32px;
+      margin: 10px;
+    }
+    video, canvas {
+      width: 360px;
+      height: 270px;
+      transform: scaleX(-1); /* 内カメラ用の鏡像 */
+    }
+  </style>
+</head>
+<body>
+  <h1>傾き + 顔検出</h1>
+  <button id="startBtn" style="display:none;">センサー取得開始</button>
+  <p id="output">読み取り中...</p>
+  <video id="video" autoplay muted playsinline></video>
+  <canvas id="canvas"></canvas>
+
+  <!-- MediaPipe FaceMeshライブラリ -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script>
+    const output = document.getElementById('output');
+    const btn = document.getElementById('startBtn');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // 傾きセンサ処理
+    function handleOrientation(event) {
+      const pitch = event.beta;
+      const roll = event.gamma;
+      if (pitch === null || roll === null) {
+        output.textContent = 'センサー値を取得できません。';
+        return;
+      }
+      output.textContent =
+        `前後傾き（Pitch）: ${pitch.toFixed(2)}°, 左右傾き（Roll）: ${roll.toFixed(2)}°`;
+    }
+
+    function startOrientation() {
+      window.addEventListener('deviceorientation', handleOrientation);
+      output.textContent = '読み取り中...';
+      btn.style.display = 'none';
+    }
+
+    // カメラ起動（内カメラ指定）
+    async function initCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user" }, // 内カメラ
+        audio: false
+      });
+      video.srcObject = stream;
+    }
+
+    // MediaPipe FaceMeshセットアップ
+    const faceMesh = new FaceMesh({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+    });
+    faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    faceMesh.onResults(results => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+      if (results.multiFaceLandmarks) {
+        for (const landmarks of results.multiFaceLandmarks) {
+          for (const pt of landmarks) {
+            ctx.beginPath();
+            ctx.arc(pt.x * canvas.width, pt.y * canvas.height, 2, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+          }
+        }
+      }
+    });
+
+    async function setup() {
+      // センサ許可（iOS用）
+      if (
+        typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function'
+      ) {
+        btn.style.display = 'inline-block';
+        btn.onclick = () => {
+          DeviceOrientationEvent.requestPermission().then(response => {
+            if (response === 'granted') {
+              startOrientation();
+            } else {
+              output.textContent = 'センサーの利用が許可されませんでした。';
+            }
+          }).catch(() => {
+            output.textContent = 'センサーの利用許可取得でエラーが発生しました。';
+          });
+        };
+      } else {
+        startOrientation();
+      }
+
+      await initCamera();
+      const camera = new Camera(video, {
+        onFrame: async () => {
+          await faceMesh.send({ image: video });
+        },
+        width: 360,
+        height: 270
+      });
+      camera.start();
+    }
+
+    window.onload = setup;
+  </script>
+</body>
+</html>
