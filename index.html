@@ -20,7 +20,7 @@
     }
     video, canvas {
       width: 360px;
-      height: 270px;
+      height: 640px;
       transform: scaleX(-1); /* 内カメラ用の鏡像 */
     }
   </style>
@@ -42,8 +42,6 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
 
-    canvas.width = 360;
-    canvas.height = 270;
     
     // 傾きセンサ処理
     function handleOrientation(event) {
